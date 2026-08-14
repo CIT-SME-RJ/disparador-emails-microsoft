@@ -27,23 +27,10 @@ Desktop.ini
 *.bak
 *.orig
 
-# Dados locais do sistema (não versionar)
-/Arquivo/Planilhas/*
-!/Arquivo/Planilhas/.gitkeep
+# Pasta de arquivos
+/Arquivo
 
-/Arquivo/Logs/*
-!/Arquivo/Logs/.gitkeep
-
-/Arquivo/Anexos_Personalizados/*
-!/Arquivo/Anexos_Personalizados/.gitkeep
-
-# Mantém pastas de projeto que devem entrar no repo
-!/Arquivo/Anexos_Fixos/
-!/Arquivo/Templates/
-
-# Opcional: ignorar arquivos de ambiente locais
+# Arquivos de ambiente locais
 .env
 .env.*
 
-# Se quiser, pode ignorar o arquivo de lock do pip
-# pip-log.txt
