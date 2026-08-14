@@ -207,6 +207,8 @@ def processar_envios(
     limite=0,
     permitir_envio_sem_anexo=False,
     exigir_anexo_personalizado=False,
+    usar_assinatura_imagem=False,
+    caminho_assinatura=None,
     callback=None
 ):
     """
@@ -241,7 +243,22 @@ def processar_envios(
         )
 
     if not template_html or not str(template_html).strip():
-        raise ValueError("O template/corpo do e-mail está vazio.")
+        raise ValueError("O corpo do e-mail está vazio.")
+
+    if usar_assinatura_imagem:
+        if not caminho_assinatura:
+            raise ValueError(
+                "A assinatura em imagem foi habilitada, mas nenhuma imagem foi selecionada."
+            )
+
+        caminho_assinatura_path = Path(caminho_assinatura)
+
+        if not caminho_assinatura_path.is_file():
+            raise FileNotFoundError(
+                f"A imagem da assinatura não foi encontrada: {caminho_assinatura}"
+            )
+    else:
+        caminho_assinatura_path = None
 
     df_filtrado = df_resultado[
         df_resultado[col_enviar].apply(valor_verdadeiro)
@@ -327,11 +344,27 @@ def processar_envios(
                     mail = outlook.CreateItem(0)
                     mail.To = email
                     mail.Subject = assunto
-                    mail.HTMLBody = corpo_html
 
                     for caminho_anexo in todos_anexos_para_enviar:
                         mail.Attachments.Add(str(caminho_anexo))
 
+                    if usar_assinatura_imagem and caminho_assinatura_path:
+                        anexo_assinatura = mail.Attachments.Add(
+                            str(caminho_assinatura_path)
+                        )
+
+                        anexo_assinatura.PropertyAccessor.SetProperty(
+                            "http://schemas.microsoft.com/mapi/proptag/0x3712001F",
+                            "assinatura_img"
+                        )
+
+                        anexo_assinatura.PropertyAccessor.SetProperty(
+                            "http://schemas.microsoft.com/mapi/proptag/0x7FFE000B",
+                            True
+                        )
+
+                    mail.HTMLBody = corpo_html
+                    
                     mail.Send()
                     status = "Enviado"
 
