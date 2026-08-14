@@ -287,6 +287,10 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
             font-family: Arial, Helvetica, sans-serif;
         }}
 
+        /* =========================
+        TEMA CLARO - padrão
+        ========================= */
+
         .painel-tags {{
             width: 100%;
             box-sizing: border-box;
@@ -295,21 +299,21 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
         .titulo {{
             font-size: 18px;
             font-weight: 700;
-            color: #f9fafb;
+            color: #111827;
             margin-bottom: 4px;
         }}
 
         .subtitulo {{
             font-size: 12px;
-            color: #9ca3af;
+            color: #4b5563;
             line-height: 1.25;
             margin-bottom: 10px;
         }}
 
-        .grid-tags {{
+                .grid-tags {{
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 5px 6px;
+            gap: 6px 8px;
             align-items: start;
         }}
 
@@ -319,17 +323,17 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
             justify-content: space-between;
             gap: 4px;
             min-width: 0;
-            background-color: rgba(148, 163, 184, 0.13);
-            border: 1px solid rgba(148, 163, 184, 0.28);
+            background-color: #f9fafb;
+            border: 1px solid #d1d5db;
             border-radius: 7px;
             padding: 3px 4px 3px 6px;
             box-sizing: border-box;
         }}
 
         .chip-negrito {{
-            grid-column: span 2;
-            margin-top: 8px;
-        }}
+                    grid-column: 1 / -1;
+                    margin-top: 8px;
+                }}
 
         .chip-texto {{
             min-width: 0;
@@ -339,14 +343,14 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
             font-family: Consolas, "Courier New", monospace;
             font-size: 11px;
             line-height: 1.2;
-            color: #f9fafb;
+            color: #111827;
             user-select: text;
         }}
 
         .botao-copiar {{
             border: none;
             background: transparent;
-            color: #cbd5e1;
+            color: #374151;
             cursor: pointer;
             font-size: 12px;
             line-height: 1;
@@ -357,12 +361,44 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
 
         .botao-copiar:hover {{
             background-color: rgba(148, 163, 184, 0.22);
-            color: #ffffff;
+            color: #111827;
         }}
 
         .botao-copiar.copiado {{
-            color: #22c55e;
+            color: #16a34a;
             font-weight: 700;
+        }}
+
+        @media (prefers-color-scheme: dark) {{
+            .titulo {{
+                color: #f9fafb;
+            }}
+
+            .subtitulo {{
+                color: #d1d5db;
+            }}
+
+            .chip {{
+                background-color: rgba(255, 255, 255, 0.06);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }}
+
+            .chip-texto {{
+                color: #f3f4f6;
+            }}
+
+            .botao-copiar {{
+                color: #d1d5db;
+            }}
+
+            .botao-copiar:hover {{
+                background-color: rgba(255, 255, 255, 0.12);
+                color: #ffffff;
+            }}
+
+            .botao-copiar.copiado {{
+                color: #22c55e;
+            }}
         }}
     </style>
     """
@@ -625,6 +661,21 @@ with st.expander("📌 Dicas de personalização", expanded=False):
         """
     )
 
+# =========================
+# CONTROLE DE PRÉ-VISUALIZAÇÃO E MENSAGEM PRONTA
+# =========================
+
+if "template_html_preview" not in st.session_state:
+    st.session_state["template_html_preview"] = ""
+
+if "template_html_aprovado" not in st.session_state:
+    st.session_state["template_html_aprovado"] = ""
+
+if "mensagem_pronta_anterior" not in st.session_state:
+    st.session_state["mensagem_pronta_anterior"] = False
+
+if "mensagem_pronta_check" not in st.session_state:
+    st.session_state["mensagem_pronta_check"] = False
 
 # =========================
 # EDITOR DA MENSAGEM
@@ -643,44 +694,62 @@ Equipe responsável
     col_editor, col_preview = st.columns([1.15, 1])
 
     with col_editor:
+        st.markdown("### ✍️ Digite o corpo do e-mail:")
+
         texto_corpo = st.text_area(
-            "Digite o corpo do e-mail:",
+            "Corpo do e-mail",
+            label_visibility="collapsed",
             value=texto_padrao,
             height=450,
             help="Use variáveis como {Nome}, {Unidade}, {Email}. Para negrito, use **texto**."
         )
 
-        with st.expander("📌 Tags disponíveis", expanded=False):
+    template_html = texto_simples_para_html(texto_corpo)
+
+    with col_preview:
+        st.markdown("### 👀 Pré-visualização")
+        area_preview = st.empty()
+
+    col_tags, col_botao_preview = st.columns([2, 1])
+
+    with col_tags:
+        with st.expander("📌 Tags disponíveis", expanded=True):
             painel_tags_compacto(
                 colunas=colunas,
                 contexto="mensagem",
                 mostrar_negrito=True
             )
 
-    template_html = texto_simples_para_html(texto_corpo)
+    with col_botao_preview:
+        st.markdown("#### Pré-visualização")
+        st.caption("Depois de alterar o texto, atualize a prévia.")
 
-    with col_preview:
-        st.markdown("### 👀 Pré-visualização")
+        if st.button("🔄 Atualizar pré-visualização", use_container_width=True):
+            st.session_state["template_html_preview"] = template_html
+            st.success("Pré-visualização atualizada.")
 
-        try:
-            df_marcados = df[df[col_enviar].apply(valor_verdadeiro)]
+    try:
+        df_marcados = df[df[col_enviar].apply(valor_verdadeiro)]
 
-            if not df_marcados.empty:
-                linha_preview = df_marcados.iloc[0]
+        if not df_marcados.empty:
+            linha_preview = df_marcados.iloc[0]
 
-                html_preview = renderizar_html(
-                    template_html,
-                    linha_preview
-                )
+            html_base_preview = st.session_state["template_html_preview"] or template_html
 
+            html_preview = renderizar_html(
+                html_base_preview,
+                linha_preview
+            )
+
+            with area_preview:
                 components.html(
                     montar_preview_html(html_preview),
                     height=450,
                     scrolling=True
                 )
 
-        except Exception as e:
-            st.error(f"Erro ao gerar prévia: {e}")
+    except Exception as e:
+        st.error(f"Erro ao gerar prévia: {e}")
 
 else:
     st.info(
@@ -719,61 +788,41 @@ else:
             st.error(f"Erro ao ler o template HTML: {e}")
             st.stop()
 
-        col_editor, col_variaveis = st.columns([4, 1])
+    col_editor, col_variaveis = st.columns([4, 1])
 
-        with col_editor:
-            template_html = st.text_area(
-                "Revise ou ajuste o HTML do e-mail:",
-                value=template_html_inicial,
-                height=320
-            )
+    with col_editor:
+        template_html = st.text_area(
+            "Revise ou ajuste o HTML do e-mail:",
+            value=template_html_inicial,
+            height=320
+        )
 
-        with col_variaveis:
-            st.markdown("**Tags**")
-            st.caption("Copie e cole no HTML.")
+    with col_variaveis:
+        st.markdown("**Tags**")
+        st.caption("Copie e cole no HTML.")
 
-            with st.container(height=240):
-                for coluna in colunas:
-                    st.code(f"{{{coluna}}}", language="text")
+        with st.container(height=240):
+            for coluna in colunas:
+                st.code(f"{{{coluna}}}", language="text")
 
 
 if not template_html.strip():
     st.error("O corpo do e-mail está vazio. Preencha o conteúdo antes de continuar.")
     st.stop()
 
-
-# =========================
-# CONTROLE DE PRÉ-VISUALIZAÇÃO E MENSAGEM PRONTA
-# =========================
-
-if "template_html_preview" not in st.session_state:
+if not st.session_state["template_html_preview"]:
     st.session_state["template_html_preview"] = template_html
 
-if "template_html_aprovado" not in st.session_state:
-    st.session_state["template_html_aprovado"] = ""
-
-if "mensagem_pronta_anterior" not in st.session_state:
-    st.session_state["mensagem_pronta_anterior"] = False
-
-if "mensagem_pronta_check" not in st.session_state:
-    st.session_state["mensagem_pronta_check"] = False
-
+# =========================
+# CONFERÊNCIA DA MENSAGEM
+# =========================
 
 st.markdown("### Conferência da mensagem")
 
-col_preview_botao, col_preview_texto = st.columns([1, 3])
-
-with col_preview_botao:
-    if st.button("🔄 Atualizar pré-visualização"):
-        st.session_state["template_html_preview"] = template_html
-        st.success("Pré-visualização atualizada.")
-
-with col_preview_texto:
-    st.caption(
-        "Use o botão para conferir a mensagem sempre que fizer ajustes. "
-        "Ao marcar a mensagem como pronta, a pré-visualização também será atualizada."
-    )
-
+st.caption(
+    "Revise a mensagem na pré-visualização. "
+    "Ao marcar como pronta, a pré-visualização será atualizada com o conteúdo atual."
+)
 
 mensagem_pronta = st.checkbox(
     "Mensagem revisada e pronta para validação ou envio.",
@@ -785,7 +834,7 @@ mudou_para_pronta = mensagem_pronta and not st.session_state["mensagem_pronta_an
 if mudou_para_pronta:
     st.session_state["template_html_preview"] = template_html
     st.session_state["template_html_aprovado"] = template_html
-    st.success("✅ Mensagem marcada como pronta. A pré-visualização foi atualizada.")
+    st.success("✅ Mensagem marcada como pronta. Revise a pré-visualização.")
 
 mensagem_liberada = False
 
@@ -806,41 +855,6 @@ else:
     )
 
 st.session_state["mensagem_pronta_anterior"] = mensagem_pronta
-
-
-# =========================
-# PRÉ-VISUALIZAÇÃO
-# =========================
-
-st.subheader("👀 Pré-visualização com a primeira linha marcada")
-
-try:
-    df_marcados = df[df[col_enviar].apply(valor_verdadeiro)]
-
-    if df_marcados.empty:
-        st.warning("Não há linhas marcadas para pré-visualizar.")
-    else:
-        linha_preview = df_marcados.iloc[0]
-
-        html_preview = renderizar_html(
-            st.session_state["template_html_preview"],
-            linha_preview
-        )
-
-        html_preview_seguro = montar_preview_html(html_preview)
-
-        try:
-            st.html(html_preview_seguro)
-        except AttributeError:
-            components.html(
-                html_preview_seguro,
-                height=360,
-                scrolling=True
-            )
-
-except Exception as e:
-    st.error(f"Não foi possível gerar a prévia: {e}")
-    st.stop()
 
 st.divider()
 
