@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Ambientes virtuais
+.venv/
+venv/
+env/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Arquivos de execução / temporários
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Dados locais do sistema (não versionar)
+/Arquivo/Planilhas/*
+!/Arquivo/Planilhas/.gitkeep
+
+/Arquivo/Logs/*
+!/Arquivo/Logs/.gitkeep
+
+/Arquivo/Anexos_Personalizados/*
+!/Arquivo/Anexos_Personalizados/.gitkeep
+
+# Mantém pastas de projeto que devem entrar no repo
+!/Arquivo/Anexos_Fixos/
+!/Arquivo/Templates/
+
+# Opcional: ignorar arquivos de ambiente locais
+.env
+.env.*
+
+# Se quiser, pode ignorar o arquivo de lock do pip
+# pip-log.txt
