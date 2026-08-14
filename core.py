@@ -54,9 +54,6 @@ def limpar_valor(valor):
 def email_basico_valido(email):
     """
     Validação simples de e-mail.
-
-    Não valida se a caixa postal existe.
-    Apenas evita valores vazios ou formatos claramente inválidos.
     """
     email = limpar_valor(email)
 
@@ -72,10 +69,6 @@ def renderizar_html(template_html, row):
     """
     Substitui variáveis no formato {NomeDaColuna}
     usando os valores da linha da planilha.
-
-    Exemplo:
-    Coluna: Nome
-    HTML: Olá {Nome}
     """
     dados = {
         str(coluna).strip(): limpar_valor(valor)
@@ -97,13 +90,7 @@ def renderizar_html(template_html, row):
 
 def obter_lista_anexos(row, col_anexos):
     """
-    Lê a coluna de anexos personalizados.
-
-    Aceita:
-    arquivo.pdf
-
-    Ou:
-    arquivo1.pdf; arquivo2.docx; arquivo3.xlsx
+    Lê a coluna de anexos personalizados (separados por ponto e vírgula).
     """
     if not col_anexos:
         return []
@@ -174,7 +161,6 @@ def validar_anexos_dinamicos(lista_anexos, pasta_anexos_dinamicos):
 def inicializar_colunas_resultado(df):
     """
     Cria ou limpa as colunas de resultado em uma cópia da planilha.
-    A planilha original não é alterada.
     """
     df_resultado = df.copy()
 
@@ -195,13 +181,14 @@ def inicializar_colunas_resultado(df):
 def processar_envios(
     df,
     template_html,
-    pasta_anexos_dinamicos,
-    pasta_anexos_fixos,
-    assunto,
-    col_enviar,
-    col_email,
+    pasta_anexos_dinamicos=None,
+    pasta_anexos_fixos=None,
+    assunto="Mensagem",
+    col_enviar="Enviar",
+    col_email="Email",
     col_anexos=None,
     enviar_real=False,
+    modo_display=False,
     somente_validar=True,
     intervalo=1.5,
     limite=0,
@@ -209,22 +196,9 @@ def processar_envios(
     exigir_anexo_personalizado=False,
     usar_assinatura_imagem=False,
     caminho_assinatura=None,
-    callback=None
+    callback=None,
+    **kwargs
 ):
-    """
-    Processa os registros da planilha.
-
-    Modos:
-    - somente_validar=True:
-        valida e-mails, HTML e anexos, mas NÃO abre Outlook e NÃO envia.
-
-    - enviar_real=True e somente_validar=False:
-        envia automaticamente pelo Outlook.
-
-    Regras importantes:
-    - Se exigir_anexo_personalizado=True, cada linha precisa ter pelo menos um anexo informado.
-    - Se houver anexo informado e ele não existir, o envio é bloqueado quando permitir_envio_sem_anexo=False.
-    """
     df_resultado = inicializar_colunas_resultado(df)
     logs = []
 
@@ -264,7 +238,8 @@ def processar_envios(
         df_resultado[col_enviar].apply(valor_verdadeiro)
     ]
 
-    usar_outlook = enviar_real and not somente_validar
+    # CORREÇÃO 1: Usa Outlook tanto para Enviar quanto para Mostrar na Tela (Display)
+    usar_outlook = (enviar_real or modo_display) and not somente_validar
 
     outlook = None
     pythoncom = None
@@ -289,7 +264,6 @@ def processar_envios(
             )
 
     lista_anexos_fixos_paths = listar_anexos_fixos(pasta_anexos_fixos)
-
     total_tentativas = 0
 
     try:
@@ -340,7 +314,10 @@ def processar_envios(
 
                 todos_anexos_para_enviar = anexos_dinamicos_ok + lista_anexos_fixos_paths
 
-                if usar_outlook:
+                # CORREÇÃO 2 e 3: Lógica unificada do Outlook sem duplicação de envio
+                if somente_validar:
+                    status = "VALIDADO"
+                elif usar_outlook:
                     mail = outlook.CreateItem(0)
                     mail.To = email
                     mail.Subject = assunto
@@ -364,15 +341,16 @@ def processar_envios(
                         )
 
                     mail.HTMLBody = corpo_html
-                    
-                    mail.Send()
-                    status = "Enviado"
+
+                    if modo_display:
+                        mail.Display()
+                        status = "EXIBIDO (DISPLAY)"
+                    elif enviar_real:
+                        mail.Send()
+                        status = "ENVIADO"
 
                     if intervalo and intervalo > 0:
                         time.sleep(intervalo)
-
-                else:
-                    status = "Validado"
 
             except Exception as e:
                 if not erro:
