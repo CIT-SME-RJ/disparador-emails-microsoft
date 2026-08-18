@@ -38,6 +38,9 @@ pip install -r requirements.txt
 echo.
 
 echo [Passo 4 de 4] Iniciando a interface visual...
+echo Abrindo o Outlook (Classic)...
+start "" outlook.exe
+
 if not exist "app_streamlit.py" goto ERRO_APP
 
 echo Abrindo o aplicativo no navegador...
@@ -48,6 +51,7 @@ goto FIM
 color 0C
 echo.
 echo ERRO CRITICO: Python nao encontrado!
+# trocar frase para buscar atendimento
 echo Por favor, instale o Python e marque a caixa "Add Python to PATH". 
 goto FIM
 

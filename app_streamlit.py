@@ -23,6 +23,112 @@ st.set_page_config(
     layout="wide"
 )
 
+st.markdown(
+    """
+    <style>
+        :root {
+            --cor-primaria: #003B5C;
+            --cor-secundaria: #0072CE;
+            --cor-texto: #1F2937;
+            --cor-texto-suave: #4B5563;
+            --cor-codigo-texto: #B91C1C;
+            --cor-codigo-fundo: #FEF2F2;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --cor-primaria: #7DD3FC;
+                --cor-secundaria: #38BDF8;
+                --cor-texto: #F3F4F6;
+                --cor-texto-suave: #CBD5E1;
+                --cor-codigo-texto: #FCA5A5;
+                --cor-codigo-fundo: #3F1D1D;
+            }
+        }
+
+        html, body {
+            font-size: 17px;
+            color: var(--cor-texto);
+        }
+
+        [data-testid="stMarkdownContainer"] p {
+            font-size: 17px !important;
+            line-height: 1.55 !important;
+            color: var(--cor-texto) !important;
+        }
+
+        h1 {
+            font-size: 36px !important;
+            font-weight: 700 !important;
+            color: var(--cor-primaria) !important;
+        }
+
+        h2 {
+            font-size: 30px !important;
+            font-weight: 700 !important;
+            color: var(--cor-primaria) !important;
+        }
+
+        h3 {
+            font-size: 24px !important;
+            font-weight: 700 !important;
+            color: var(--cor-secundaria) !important;
+        }
+
+        label, [data-testid="stWidgetLabel"] p {
+            font-size: 17px !important;
+            color: var(--cor-texto) !important;
+            font-weight: 600 !important;
+        }
+
+        [data-testid="stAlert"] p {
+            font-size: 17px !important;
+            line-height: 1.5 !important;
+        }
+
+        button {
+            font-size: 17px !important;
+            font-weight: 600 !important;
+            border-radius: 8px !important;
+        }
+
+        input, textarea {
+            font-size: 17px !important;
+            color: var(--cor-texto) !important;
+        }
+
+        div[data-baseweb="select"] * {
+            font-size: 17px !important;
+        }
+
+        div[role="radiogroup"] label p {
+            font-size: 17px !important;
+            color: var(--cor-texto) !important;
+        }
+
+        details summary p {
+            font-size: 17px !important;
+            font-weight: 700 !important;
+            color: var(--cor-primaria) !important;
+        }
+
+        [data-testid="stCaptionContainer"] p {
+            font-size: 15px !important;
+            color: var(--cor-texto-suave) !important;
+            line-height: 1.4 !important;
+        }
+
+        code {
+            color: var(--cor-codigo-texto) !important;
+            /* background-color: var(--cor-codigo-fundo) !important; */
+            border-radius: 4px !important;
+            padding: 2px 5px !important;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
 
 # =========================
 # CONFIGURAÇÃO DAS PASTAS
@@ -47,6 +153,147 @@ for pasta in [
 ]:
     pasta.mkdir(parents=True, exist_ok=True)
 
+def criar_planilha_modelo():
+    caminho_modelo = PASTA_PLANILHAS / "Planilha_Modelo.xlsx"
+    caminho_modelo_padrao = PASTA_PLANILHAS / "Planilha_Modelo_PADRAO.xlsx"
+
+    if caminho_modelo.exists():
+        if caminho_modelo_padrao.exists():
+            return
+
+        caminho_destino = caminho_modelo_padrao
+    else:
+        caminho_destino = caminho_modelo
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.comments import Comment
+
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Dados"
+
+    colunas_modelo = [
+        "Enviar",
+        "Email_Destino",
+        "Nome",
+        "Setor",
+        "Anexo_Personalizado"
+    ]
+
+    dados_modelo = [
+        [
+            "Sim",
+            "exemplo@dominio.com",
+            "Maria Exemplo",
+            "Setor Exemplo",
+            "arquivo_exemplo.pdf"
+        ],
+        [
+            "",
+            "",
+            "",
+            "",
+            ""
+        ]
+    ]
+
+    worksheet.append(colunas_modelo)
+
+    for linha in dados_modelo:
+        worksheet.append(linha)
+
+    preenchimento_obrigatorio = PatternFill(
+        start_color="FFD966",
+        end_color="FFD966",
+        fill_type="solid"
+    )
+
+    preenchimento_opcional = PatternFill(
+        start_color="D9EAD3",
+        end_color="D9EAD3",
+        fill_type="solid"
+    )
+
+    fonte_cabecalho = Font(bold=True, color="000000")
+    alinhamento_cabecalho = Alignment(
+        horizontal="center",
+        vertical="center",
+        wrap_text=True
+    )
+
+    borda_fina = Border(
+        left=Side(style="thin", color="B7B7B7"),
+        right=Side(style="thin", color="B7B7B7"),
+        top=Side(style="thin", color="B7B7B7"),
+        bottom=Side(style="thin", color="B7B7B7")
+    )
+
+    comentarios = {
+        "Enviar": "Obrigatório. Use Sim, S, X, 1, True, Enviar ou OK para marcar a linha para envio.",
+        "Email_Destino": "Obrigatório. Informe o e-mail do destinatário.",
+        "Nome": "Opcional. Pode ser usado no corpo do e-mail com a tag {Nome}.",
+        "Setor": "Opcional. Pode ser usado no corpo do e-mail com a tag {Setor}.",
+        "Anexo_Personalizado": "Opcional. Informe o nome do arquivo que está na pasta Anexos_Personalizados. Para vários anexos, separe por ponto e vírgula."
+    }
+
+    colunas_obrigatorias = {"Enviar", "Email_Destino"}
+
+    for celula in worksheet[1]:
+        nome_coluna = celula.value
+
+        celula.font = fonte_cabecalho
+        celula.alignment = alinhamento_cabecalho
+        celula.border = borda_fina
+
+        if nome_coluna in colunas_obrigatorias:
+            celula.fill = preenchimento_obrigatorio
+        else:
+            celula.fill = preenchimento_opcional
+
+        texto_comentario = comentarios.get(nome_coluna)
+        if texto_comentario:
+            celula.comment = Comment(texto_comentario, "Sistema")
+
+    for linha in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
+        for celula in linha:
+            celula.border = borda_fina
+            celula.alignment = Alignment(vertical="center")
+
+    worksheet.freeze_panes = "A2"
+    worksheet.auto_filter.ref = f"A1:E{worksheet.max_row}"
+
+    larguras = {
+        "A": 14,
+        "B": 32,
+        "C": 24,
+        "D": 24,
+        "E": 38
+    }
+
+    for coluna, largura in larguras.items():
+        worksheet.column_dimensions[coluna].width = largura
+
+    worksheet["G1"] = "Legenda"
+    worksheet["G1"].font = Font(bold=True)
+
+    worksheet["G2"] = "Amarelo = coluna obrigatória"
+    worksheet["G2"].fill = preenchimento_obrigatorio
+
+    worksheet["G3"] = "Verde = coluna opcional"
+    worksheet["G3"].fill = preenchimento_opcional
+
+    worksheet.column_dimensions["G"].width = 34
+
+    try:
+        workbook.save(caminho_destino)
+    except PermissionError:
+        st.warning(
+            f"⚠️ Não foi possível criar ou atualizar a planilha modelo: {caminho_destino.name}. "
+            "Feche o arquivo no Excel ou na pré-visualização do Windows e clique em Atualizar."
+        )
+
+criar_planilha_modelo()
 
 def encontrar_coluna_preferida(colunas, opcoes):
     colunas_normalizadas = {
@@ -439,7 +686,7 @@ def painel_tags_compacto(colunas, contexto="mensagem", mostrar_negrito=True):
 
 
 st.title("📧 Disparador de E-mails com Outlook Desktop")
-st.markdown("Siga o passo a passo abaixo para realizar seus envios com mais segurança.")
+st.markdown("##### Siga o passo a passo abaixo para realizar seus envios com mais segurança.")
 st.divider()
 
 
@@ -478,7 +725,12 @@ st.divider()
 st.header("Passo 2: Base de Dados")
 
 st.info(
-    f"📁 Coloque sua planilha Excel na pasta abaixo:\n\n`{PASTA_PLANILHAS}`"
+    f"📁 Coloque sua planilha Excel nesta pasta:\n\n`{PASTA_PLANILHAS}`"
+)
+
+st.caption(
+    "💡 Dica: essa pasta é criada automaticamente dentro da pasta do programa. "
+    "Procure por Arquivo > Planilhas."
 )
 
 planilhas = sorted(list(PASTA_PLANILHAS.glob("*.xlsx")))
@@ -543,7 +795,7 @@ with coluna_1:
 with coluna_2:
     indice_col_email = encontrar_coluna_preferida(
         colunas,
-        ["Email", "E-mail", "E_mail", "Destinatario", "Destinatário"]
+        ["Email_Destino", "Email", "E-mail", "E_mail", "email", "e-mail", "e_mail", "Destinatario", "Destinatário"]
     )
 
     col_email = st.selectbox(
@@ -639,7 +891,112 @@ st.divider()
 # PASSO 4: CORPO DO E-MAIL
 # =========================
 
-st.header("Passo 4: Corpo do E-mail")
+st.header("Passo 4: Montagem do E-mail")
+
+# ASSUNTO DA MENSAGEM
+st.subheader("Assunto da mensagem")
+
+assunto = st.text_input(
+    "Digite o assunto do e-mail:",
+    value="Mensagem Importante",
+    help="Você também pode usar tags da planilha, como {Nome}, {Setor} ou {Email_Destino}."
+)
+
+st.caption(
+    "💡 Dica: o assunto também pode ser personalizado com as tags da planilha."
+)
+
+assunto_conferido = st.checkbox(
+    "Conferi o assunto da mensagem e ele está correto."
+)
+
+if not assunto.strip():
+    st.error("O assunto do e-mail está vazio.")
+    st.stop()
+
+if not assunto_conferido:
+    st.warning("⚠️ Confira o assunto da mensagem antes de continuar.")
+    st.stop()
+
+st.divider()
+
+
+# ASSINATURA EM IMAGEM
+st.subheader("Assinatura")
+
+usar_assinatura_imagem = st.checkbox(
+    "Desejo usar uma assinatura em imagem."
+)
+
+caminho_assinatura = None
+
+if usar_assinatura_imagem:
+    col_assinatura_config, col_assinatura_preview = st.columns([1.15, 1])
+
+    with col_assinatura_config:
+        st.markdown("###### Configuração da assinatura")
+
+        extensoes_assinatura = {".png", ".jpg", ".jpeg", ".gif"}
+
+        imagens_assinatura = sorted(
+            arquivo
+            for arquivo in PASTA_ASSINATURA.iterdir()
+            if arquivo.is_file() and arquivo.suffix.lower() in extensoes_assinatura
+        )
+
+        if not imagens_assinatura:
+            st.info(
+                f"📁 Coloque a imagem da assinatura nesta pasta:\n\n"
+                f"`{PASTA_ASSINATURA}`"
+            )
+
+            st.caption(
+                "💡 Dica: use uma imagem em formato .png, .jpg, .jpeg ou .gif."
+            )
+
+            st.warning("⚠️ Nenhuma imagem encontrada na pasta de assinatura.")
+
+            if st.button("🔄 Atualizar pasta de assinatura"):
+                st.rerun()
+
+            st.stop()
+
+        if len(imagens_assinatura) == 1:
+            caminho_assinatura = imagens_assinatura[0]
+
+            st.success(
+                f"✅ Imagem de assinatura encontrada: `{caminho_assinatura.name}`"
+            )
+
+        else:
+            caminho_assinatura = st.selectbox(
+                "Selecione a imagem de assinatura:",
+                imagens_assinatura,
+                format_func=lambda caminho: caminho.name
+            )
+
+            if caminho_assinatura:
+                st.success(
+                    f"✅ Imagem de assinatura selecionada: `{caminho_assinatura.name}`"
+                )
+
+        if st.button("🔄 Atualizar pasta de assinatura"):
+            st.rerun()
+
+    with col_assinatura_preview:
+        st.markdown("###### Prévia da assinatura")
+
+        if caminho_assinatura:
+            st.image(
+                str(caminho_assinatura),
+                caption=caminho_assinatura.name,
+                use_container_width=True
+            )
+
+else:
+    st.caption("Nenhuma assinatura em imagem selecionada.")
+
+st.divider()
 
 modo_editor = st.radio(
     "Formato da mensagem:",
@@ -653,6 +1010,9 @@ modo_editor = st.radio(
 if "template_html_preview" not in st.session_state:
     st.session_state["template_html_preview"] = ""
 
+if "assunto_preview" not in st.session_state:
+    st.session_state["assunto_preview"] = ""
+
 if "template_html_aprovado" not in st.session_state:
     st.session_state["template_html_aprovado"] = ""
 
@@ -663,41 +1023,27 @@ if "mensagem_pronta_check" not in st.session_state:
     st.session_state["mensagem_pronta_check"] = False
 
 
-# ASSINATURA EM IMAGEM
-st.subheader("Assinatura")
+# APOIO PARA PREENCHIMENTO DA MENSAGEM
+col_tags, col_dicas = st.columns([1, 1])
 
-usar_assinatura_imagem = st.checkbox(
-    "Desejo usar uma assinatura em imagem."
-)
+with col_dicas:
+    with st.expander("💡 Dicas de preenchimento da mensagem", expanded=False):
+        st.markdown("""
+Dicas rápidas
 
-caminho_assinatura = None
+- Use as tags da planilha para personalizar a mensagem.
+- Exemplo: `Olá {Nome},` será trocado pelo nome da pessoa na linha da planilha.
+- Cada coluna da planilha pode virar uma tag, desde que esteja escrita entre chaves.
+- Exemplos de tags possíveis: `{Nome}`, `{Setor}`, `{Email_Destino}`.
+- Evite alterar manualmente os nomes das tags. Elas precisam bater exatamente com o nome da coluna.
+- Se usar anexos personalizados, informe o nome do arquivo na coluna `Anexo_Personalizado`.
+- Para mais de um anexo personalizado na mesma linha, separe os nomes com ponto e vírgula: `arquivo1.pdf; arquivo2.pdf`.
+- Para colocar uma palavra em negrito, use dois asteriscos antes e depois da palavra.
+""")
 
-if usar_assinatura_imagem:
-    st.info(f"📁 Coloque a imagem da assinatura na pasta abaixo:\n\n`{PASTA_ASSINATURA}`")
-
-    extensoes_assinatura = {".png", ".jpg", ".jpeg", ".gif"}
-
-    imagens_assinatura = sorted(
-        arquivo
-        for arquivo in PASTA_ASSINATURA.iterdir()
-        if arquivo.is_file() and arquivo.suffix.lower() in extensoes_assinatura
-    )
-
-    if not imagens_assinatura:
-        st.error("⚠️ Nenhuma imagem encontrada na pasta de assinatura.")
-        if st.button("🔄 Atualizar pasta de assinatura"):
-            st.rerun()
-        st.stop()
-
-    if len(imagens_assinatura) == 1:
-        caminho_assinatura = imagens_assinatura[0]
-        st.success(f"✅ Imagem de assinatura encontrada: `{caminho_assinatura.name}`")
-    else:
-        caminho_assinatura = st.selectbox(
-            "Selecione a imagem de assinatura:",
-            imagens_assinatura,
-            format_func=lambda caminho: caminho.name
-        )
+with col_tags:
+    with st.expander("📌 Tags disponíveis", expanded=True):
+        painel_tags_compacto(colunas=colunas)
 
 
 # EDITOR DA MENSAGEM
@@ -708,13 +1054,14 @@ Olá {Nome},
 Esta é uma mensagem automática.
 
 Atenciosamente,
-Equipe responsável
+**Equipe responsável**
 """.strip()
 
     col_editor, col_preview = st.columns([1.15, 1])
 
     with col_editor:
         st.markdown("### ✍️ Digite o corpo do e-mail:")
+
         texto_corpo = st.text_area(
             "Corpo do e-mail",
             label_visibility="collapsed",
@@ -722,7 +1069,23 @@ Equipe responsável
             height=450
         )
 
+    with col_preview:
+        st.markdown("### 👀 Pré-visualização")
+
+        area_assunto_preview = st.empty()
+        area_preview = st.empty()
+        area_botao_preview = st.empty()
+        area_feedback_preview = st.empty()
+
+        with area_botao_preview:
+            botao_atualizar_preview = st.button(
+                "🔄 Atualizar pré-visualização",
+                use_container_width=True,
+                key="btn_atualizar_preview_simples"
+            )
+
     template_html = texto_simples_para_html(texto_corpo)
+
     template_html = adicionar_assinatura_imagem_ao_html(
         template_html=template_html,
         usar_assinatura_imagem=usar_assinatura_imagem,
@@ -730,19 +1093,11 @@ Equipe responsável
         largura_imagem=320
     )
 
-    with col_preview:
-        st.markdown("### 👀 Pré-visualização")
-        area_preview = st.empty()
+    if botao_atualizar_preview:
+        st.session_state["assunto_preview"] = assunto
+        st.session_state["template_html_preview"] = template_html
 
-    col_tags, col_botao_preview = st.columns([2, 1])
-
-    with col_tags:
-        with st.expander("📌 Tags disponíveis", expanded=True):
-            painel_tags_compacto(colunas=colunas)
-
-    with col_botao_preview:
-        if st.button("🔄 Atualizar pré-visualização", use_container_width=True):
-            st.session_state["template_html_preview"] = template_html
+        with area_feedback_preview:
             st.success("Pré-visualização atualizada.")
 
     try:
@@ -750,12 +1105,41 @@ Equipe responsável
 
         if not df_marcados.empty:
             linha_preview = df_marcados.iloc[0]
-            html_base_preview = st.session_state["template_html_preview"] or template_html
-            html_base_preview = preparar_html_preview_assinatura(html_base_preview, caminho_assinatura)
-            html_preview = renderizar_html(html_base_preview, linha_preview)
+
+            assunto_base_preview = (
+                st.session_state["assunto_preview"]
+                or assunto
+            )
+
+            assunto_renderizado = renderizar_html(
+                assunto_base_preview,
+                linha_preview
+            )
+
+            with area_assunto_preview:
+                st.info(f"Assunto: {assunto_renderizado}")
+
+            html_base_preview = (
+                st.session_state["template_html_preview"]
+                or template_html
+            )
+
+            html_base_preview = preparar_html_preview_assinatura(
+                html_base_preview,
+                caminho_assinatura
+            )
+
+            html_preview = renderizar_html(
+                html_base_preview,
+                linha_preview
+            )
 
             with area_preview:
-                components.html(montar_preview_html(html_preview), height=450, scrolling=True)
+                components.html(
+                    montar_preview_html(html_preview),
+                    height=390,
+                    scrolling=True
+                )
 
     except Exception as e:
         st.error(f"Erro ao gerar prévia: {e}")
@@ -764,12 +1148,46 @@ else:
     templates = sorted(list(PASTA_TEMPLATES.glob("*.html")))
 
     if not templates:
-        template_html_inicial = "<p>Olá {Nome},</p><p>Mensagem de teste.</p>"
+        template_html_inicial = """
+<p>Olá {Nome},</p>
+<p>Mensagem de teste.</p>
+""".strip()
     else:
-        template_selecionado = st.selectbox("Selecione o template HTML:", templates, format_func=lambda c: c.name)
+        template_selecionado = st.selectbox(
+            "Selecione o template HTML:",
+            templates,
+            format_func=lambda c: c.name
+        )
+
         template_html_inicial = carregar_template_html(template_selecionado)
 
-    template_html = st.text_area("Revise o HTML:", value=template_html_inicial, height=320)
+    col_html, col_preview = st.columns([1.15, 1])
+
+    with col_html:
+        st.markdown("### 🧩 Revise o HTML:")
+
+        template_html = st.text_area(
+            "Revise o HTML:",
+            value=template_html_inicial,
+            height=450,
+            label_visibility="collapsed"
+        )
+
+    with col_preview:
+        st.markdown("### 👀 Pré-visualização")
+
+        area_assunto_preview = st.empty()
+        area_preview = st.empty()
+        area_botao_preview = st.empty()
+        area_feedback_preview = st.empty()
+
+        with area_botao_preview:
+            botao_atualizar_preview = st.button(
+                "🔄 Atualizar pré-visualização",
+                use_container_width=True,
+                key="btn_atualizar_preview_html"
+            )
+
     template_html = adicionar_assinatura_imagem_ao_html(
         template_html=template_html,
         usar_assinatura_imagem=usar_assinatura_imagem,
@@ -777,13 +1195,75 @@ else:
         largura_imagem=320
     )
 
+    if botao_atualizar_preview:
+        st.session_state["assunto_preview"] = assunto
+        st.session_state["template_html_preview"] = template_html
+
+        with area_feedback_preview:
+            st.success("Pré-visualização atualizada.")
+
+    try:
+        df_marcados = df[df[col_enviar].apply(valor_verdadeiro)]
+
+        if not df_marcados.empty:
+            linha_preview = df_marcados.iloc[0]
+
+            assunto_base_preview = (
+                st.session_state["assunto_preview"]
+                or assunto
+            )
+
+            assunto_renderizado = renderizar_html(
+                assunto_base_preview,
+                linha_preview
+            )
+
+            with area_assunto_preview:
+                st.info(f"Assunto: {assunto_renderizado}")
+
+            html_base_preview = (
+                st.session_state["template_html_preview"]
+                or template_html
+            )
+
+            html_base_preview = preparar_html_preview_assinatura(
+                html_base_preview,
+                caminho_assinatura
+            )
+
+            html_preview = renderizar_html(
+                html_base_preview,
+                linha_preview
+            )
+
+            with area_preview:
+                components.html(
+                    montar_preview_html(html_preview),
+                    height=390,
+                    scrolling=True
+                )
+
+    except Exception as e:
+        st.error(f"Erro ao gerar prévia: {e}")
+
+
 if not template_html.strip():
     st.error("O corpo do e-mail está vazio.")
+    st.stop()
+
+if not assunto.strip():
+    st.error("O assunto do e-mail está vazio.")
     st.stop()
 
 if not st.session_state["template_html_preview"]:
     st.session_state["template_html_preview"] = template_html
 
+if not st.session_state["assunto_preview"]:
+    st.session_state["assunto_preview"] = assunto
+    
+## FIM EDITOR DE MENSAGEM
+
+st.divider()
 
 st.markdown("### Conferência da mensagem")
 mensagem_pronta = st.checkbox(
@@ -812,8 +1292,6 @@ if not mensagem_liberada:
     st.stop()
 
 st.header("Passo 5: Ação no Outlook")
-
-assunto = st.text_input("Assunto do e-mail:", value="Mensagem Importante")
 
 modo_acao = st.radio(
     "O que você deseja fazer?",
