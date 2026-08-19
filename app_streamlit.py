@@ -680,6 +680,16 @@ st.title("📧 Disparador de E-mails com Outlook Desktop")
 st.markdown("##### Siga o passo a passo abaixo para realizar seus envios com mais segurança.")
 st.divider()
 
+README_PATH = Path.cwd() / "README.md"
+
+with st.expander("📘 Abrir manual do sistema / README", expanded=False):
+    if README_PATH.exists():
+        conteudo_readme = README_PATH.read_text(encoding="utf-8")
+        st.markdown(conteudo_readme)
+    else:
+        st.warning(
+            "⚠️ O arquivo README.md não foi encontrado na pasta principal do sistema."
+        )
 
 with st.expander("📁 Ver estrutura de pastas usada pelo sistema", expanded=False):
     mostrar_pastas()
