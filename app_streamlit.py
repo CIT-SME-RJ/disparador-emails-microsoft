@@ -153,17 +153,22 @@ for pasta in [
 ]:
     pasta.mkdir(parents=True, exist_ok=True)
 
+def obter_caminho_planilha_modelo_disponivel():
+    caminho_base = PASTA_PLANILHAS / "Planilha_Modelo.xlsx"
+
+    if not caminho_base.exists():
+        return caminho_base
+
+    contador = 2
+    while True:
+        caminho_copia = PASTA_PLANILHAS / f"Planilha_Modelo ({contador}).xlsx"
+        if not caminho_copia.exists():
+            return caminho_copia
+        contador += 1
+
+
 def criar_planilha_modelo():
-    caminho_modelo = PASTA_PLANILHAS / "Planilha_Modelo.xlsx"
-    caminho_modelo_padrao = PASTA_PLANILHAS / "Planilha_Modelo_PADRAO.xlsx"
-
-    if caminho_modelo.exists():
-        if caminho_modelo_padrao.exists():
-            return
-
-        caminho_destino = caminho_modelo_padrao
-    else:
-        caminho_destino = caminho_modelo
+    caminho_destino = obter_caminho_planilha_modelo_disponivel()
 
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -182,20 +187,8 @@ def criar_planilha_modelo():
     ]
 
     dados_modelo = [
-        [
-            "Sim",
-            "exemplo@dominio.com",
-            "Maria Exemplo",
-            "Setor Exemplo",
-            "arquivo_exemplo.pdf"
-        ],
-        [
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]
+        ["Sim", "exemplo@dominio.com", "Maria Exemplo", "Setor Exemplo", "arquivo_exemplo.pdf"],
+        ["", "", "", "", ""]
     ]
 
     worksheet.append(colunas_modelo)
@@ -216,6 +209,7 @@ def criar_planilha_modelo():
     )
 
     fonte_cabecalho = Font(bold=True, color="000000")
+
     alinhamento_cabecalho = Alignment(
         horizontal="center",
         vertical="center",
@@ -241,7 +235,6 @@ def criar_planilha_modelo():
 
     for celula in worksheet[1]:
         nome_coluna = celula.value
-
         celula.font = fonte_cabecalho
         celula.alignment = alinhamento_cabecalho
         celula.border = borda_fina
@@ -289,11 +282,9 @@ def criar_planilha_modelo():
         workbook.save(caminho_destino)
     except PermissionError:
         st.warning(
-            f"⚠️ Não foi possível criar ou atualizar a planilha modelo: {caminho_destino.name}. "
+            f"⚠️ Não foi possível criar a planilha modelo: {caminho_destino.name}. "
             "Feche o arquivo no Excel ou na pré-visualização do Windows e clique em Atualizar."
         )
-
-criar_planilha_modelo()
 
 def encontrar_coluna_preferida(colunas, opcoes):
     colunas_normalizadas = {
@@ -732,6 +723,11 @@ st.caption(
     "💡 Dica: essa pasta é criada automaticamente dentro da pasta do programa. "
     "Procure por Arquivo > Planilhas."
 )
+
+if st.button("📄 Criar planilha modelo"):
+    criar_planilha_modelo()
+    st.success("✅ Planilha modelo criada na pasta de planilhas.")
+    st.rerun()
 
 planilhas = sorted(list(PASTA_PLANILHAS.glob("*.xlsx")))
 
@@ -1296,9 +1292,9 @@ st.header("Passo 5: Ação no Outlook")
 modo_acao = st.radio(
     "O que você deseja fazer?",
     [
-        "👁️ Modo Display: Abrir janela do e-mail na tela no Outlook (para conferir)",
-        "🚀 Enviar de verdade pelo Outlook",
-        "🔍 Apenas simular/validar no sistema (sem interagir com o Outlook)"
+        "🔍 Modo Validação: Apenas simular/validar no sistema (sem interagir com o Outlook)",
+        "👁️ Modo Visualização: Abrir janela do e-mail na tela no Outlook (para conferir)",
+        "🚀 Modo Envio real: disparo de e-mails da tabela validada pelo Outlook"
     ],
     index=0
 )
@@ -1328,14 +1324,14 @@ with st.expander("⚙️ Configurações avançadas", expanded=True):
             value=False
         )
 
-enviar_real = (modo_acao == "🚀 Enviar de verdade pelo Outlook")
-modo_display = ("Modo Display" in modo_acao)
-somente_validar = ("Apenas simular" in modo_acao)
+enviar_real = ("Envio real" in modo_acao)
+modo_display = ("Modo Visualização" in modo_acao)
+somente_validar = ("Modo Validação" in modo_acao)
 
 confirmacao_envio = True
 
 if enviar_real:
-    st.error("🚨 ATENÇÃO: Os e-mails serão ENVIADOS DE VERDADE para os clientes!")
+    st.error("🚨 ATENÇÃO: O disparo dos e-mails está em MODO REAL e será realizado!")
     confirmacao_envio = st.checkbox("Tenho certeza e autorizo o disparo oficial.")
 elif modo_display:
     st.info("👁️ **Modo Display Ativo:** O Outlook vai abrir a janela com o e-mail pronto na sua tela.")
