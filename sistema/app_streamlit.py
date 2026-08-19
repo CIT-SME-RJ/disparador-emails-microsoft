@@ -10,12 +10,25 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from core import (
+from sistema.excel_modelo import criar_planilha_modelo
+from sistema.style import aplicar_estilo_global
+
+from sistema.core import (
     processar_envios,
     valor_verdadeiro,
     renderizar_html
 )
 
+from sistema.config import (
+    PASTA_PROJETO,
+    BASE_DIR,
+    PASTA_PLANILHAS,
+    PASTA_ANEXOS_DINAMICOS,
+    PASTA_ANEXOS_FIXOS,
+    PASTA_ASSINATURA,
+    PASTA_LOGS,
+    garantir_pastas
+)
 
 st.set_page_config(
     page_title="Disparador Outlook",
@@ -23,268 +36,8 @@ st.set_page_config(
     layout="wide"
 )
 
-st.markdown(
-    """
-    <style>
-        :root {
-            --cor-primaria: #003B5C;
-            --cor-secundaria: #0072CE;
-            --cor-texto: #1F2937;
-            --cor-texto-suave: #4B5563;
-            --cor-codigo-texto: #B91C1C;
-            --cor-codigo-fundo: #FEF2F2;
-        }
-
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --cor-primaria: #7DD3FC;
-                --cor-secundaria: #38BDF8;
-                --cor-texto: #F3F4F6;
-                --cor-texto-suave: #CBD5E1;
-                --cor-codigo-texto: #FCA5A5;
-                --cor-codigo-fundo: #3F1D1D;
-            }
-        }
-
-        html, body {
-            font-size: 17px;
-            color: var(--cor-texto);
-        }
-
-        [data-testid="stMarkdownContainer"] p {
-            font-size: 17px !important;
-            line-height: 1.55 !important;
-            color: var(--cor-texto) !important;
-        }
-
-        h1 {
-            font-size: 36px !important;
-            font-weight: 700 !important;
-            color: var(--cor-primaria) !important;
-        }
-
-        h2 {
-            font-size: 30px !important;
-            font-weight: 700 !important;
-            color: var(--cor-primaria) !important;
-        }
-
-        h3 {
-            font-size: 24px !important;
-            font-weight: 700 !important;
-            color: var(--cor-secundaria) !important;
-        }
-
-        label, [data-testid="stWidgetLabel"] p {
-            font-size: 17px !important;
-            color: var(--cor-texto) !important;
-            font-weight: 600 !important;
-        }
-
-        [data-testid="stAlert"] p {
-            font-size: 17px !important;
-            line-height: 1.5 !important;
-        }
-
-        button {
-            font-size: 17px !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-        }
-
-        input, textarea {
-            font-size: 17px !important;
-            color: var(--cor-texto) !important;
-        }
-
-        div[data-baseweb="select"] * {
-            font-size: 17px !important;
-        }
-
-        div[role="radiogroup"] label p {
-            font-size: 17px !important;
-            color: var(--cor-texto) !important;
-        }
-
-        details summary p {
-            font-size: 17px !important;
-            font-weight: 700 !important;
-            color: var(--cor-primaria) !important;
-        }
-
-        [data-testid="stCaptionContainer"] p {
-            font-size: 15px !important;
-            color: var(--cor-texto-suave) !important;
-            line-height: 1.4 !important;
-        }
-
-        code {
-            color: var(--cor-codigo-texto) !important;
-            /* background-color: var(--cor-codigo-fundo) !important; */
-            border-radius: 4px !important;
-            padding: 2px 5px !important;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# =========================
-# CONFIGURAÇÃO DAS PASTAS
-# =========================
-
-BASE_DIR = Path.cwd() / "Arquivo"
-
-PASTA_PLANILHAS = BASE_DIR / "Planilhas"
-PASTA_ANEXOS_DINAMICOS = BASE_DIR / "Anexos_Personalizados"
-PASTA_ANEXOS_FIXOS = BASE_DIR / "Anexos_Fixos"
-PASTA_ASSINATURA = BASE_DIR / "Assinatura"
-PASTA_TEMPLATES = BASE_DIR / "Templates"
-PASTA_LOGS = BASE_DIR / "Logs"
-
-for pasta in [
-    PASTA_PLANILHAS,
-    PASTA_ANEXOS_DINAMICOS,
-    PASTA_ANEXOS_FIXOS,
-    PASTA_ASSINATURA,
-    PASTA_TEMPLATES,
-    PASTA_LOGS
-]:
-    pasta.mkdir(parents=True, exist_ok=True)
-
-def obter_caminho_planilha_modelo_disponivel():
-    caminho_base = PASTA_PLANILHAS / "Planilha_Modelo.xlsx"
-
-    if not caminho_base.exists():
-        return caminho_base
-
-    contador = 2
-    while True:
-        caminho_copia = PASTA_PLANILHAS / f"Planilha_Modelo ({contador}).xlsx"
-        if not caminho_copia.exists():
-            return caminho_copia
-        contador += 1
-
-
-def criar_planilha_modelo():
-    caminho_destino = obter_caminho_planilha_modelo_disponivel()
-
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from openpyxl.comments import Comment
-
-    workbook = Workbook()
-    worksheet = workbook.active
-    worksheet.title = "Dados"
-
-    colunas_modelo = [
-        "Enviar",
-        "Email_Destino",
-        "Nome",
-        "Setor",
-        "Anexo_Personalizado"
-    ]
-
-    dados_modelo = [
-        ["Sim", "exemplo@dominio.com", "Maria Exemplo", "Setor Exemplo", "arquivo_exemplo.pdf"],
-        ["", "", "", "", ""]
-    ]
-
-    worksheet.append(colunas_modelo)
-
-    for linha in dados_modelo:
-        worksheet.append(linha)
-
-    preenchimento_obrigatorio = PatternFill(
-        start_color="FFD966",
-        end_color="FFD966",
-        fill_type="solid"
-    )
-
-    preenchimento_opcional = PatternFill(
-        start_color="D9EAD3",
-        end_color="D9EAD3",
-        fill_type="solid"
-    )
-
-    fonte_cabecalho = Font(bold=True, color="000000")
-
-    alinhamento_cabecalho = Alignment(
-        horizontal="center",
-        vertical="center",
-        wrap_text=True
-    )
-
-    borda_fina = Border(
-        left=Side(style="thin", color="B7B7B7"),
-        right=Side(style="thin", color="B7B7B7"),
-        top=Side(style="thin", color="B7B7B7"),
-        bottom=Side(style="thin", color="B7B7B7")
-    )
-
-    comentarios = {
-        "Enviar": "Obrigatório. Use Sim, S, X, 1, True, Enviar ou OK para marcar a linha para envio.",
-        "Email_Destino": "Obrigatório. Informe o e-mail do destinatário.",
-        "Nome": "Opcional. Pode ser usado no corpo do e-mail com a tag {Nome}.",
-        "Setor": "Opcional. Pode ser usado no corpo do e-mail com a tag {Setor}.",
-        "Anexo_Personalizado": "Opcional. Informe o nome do arquivo que está na pasta Anexos_Personalizados. Para vários anexos, separe por ponto e vírgula."
-    }
-
-    colunas_obrigatorias = {"Enviar", "Email_Destino"}
-
-    for celula in worksheet[1]:
-        nome_coluna = celula.value
-        celula.font = fonte_cabecalho
-        celula.alignment = alinhamento_cabecalho
-        celula.border = borda_fina
-
-        if nome_coluna in colunas_obrigatorias:
-            celula.fill = preenchimento_obrigatorio
-        else:
-            celula.fill = preenchimento_opcional
-
-        texto_comentario = comentarios.get(nome_coluna)
-        if texto_comentario:
-            celula.comment = Comment(texto_comentario, "Sistema")
-
-    for linha in worksheet.iter_rows(min_row=2, max_row=worksheet.max_row):
-        for celula in linha:
-            celula.border = borda_fina
-            celula.alignment = Alignment(vertical="center")
-
-    worksheet.freeze_panes = "A2"
-    worksheet.auto_filter.ref = f"A1:E{worksheet.max_row}"
-
-    larguras = {
-        "A": 14,
-        "B": 32,
-        "C": 24,
-        "D": 24,
-        "E": 38
-    }
-
-    for coluna, largura in larguras.items():
-        worksheet.column_dimensions[coluna].width = largura
-
-    worksheet["G1"] = "Legenda"
-    worksheet["G1"].font = Font(bold=True)
-
-    worksheet["G2"] = "Amarelo = coluna obrigatória"
-    worksheet["G2"].fill = preenchimento_obrigatorio
-
-    worksheet["G3"] = "Verde = coluna opcional"
-    worksheet["G3"].fill = preenchimento_opcional
-
-    worksheet.column_dimensions["G"].width = 34
-
-    try:
-        workbook.save(caminho_destino)
-    except PermissionError:
-        st.warning(
-            f"⚠️ Não foi possível criar a planilha modelo: {caminho_destino.name}. "
-            "Feche o arquivo no Excel ou na pré-visualização do Windows e clique em Atualizar."
-        )
+garantir_pastas()
+aplicar_estilo_global()
 
 def encontrar_coluna_preferida(colunas, opcoes):
     colunas_normalizadas = {
@@ -299,11 +52,6 @@ def encontrar_coluna_preferida(colunas, opcoes):
             return colunas_normalizadas[chave]
 
     return 0
-
-
-def carregar_template_html(caminho_template):
-    with open(caminho_template, "r", encoding="utf-8") as arquivo:
-        return arquivo.read()
 
 
 def texto_simples_para_html(texto):
@@ -483,9 +231,6 @@ Anexos fixos:
 
 Assinatura em imagem:
 {PASTA_ASSINATURA}
-
-Templates HTML:
-{PASTA_TEMPLATES}
 
 Logs:
 {PASTA_LOGS}
@@ -680,7 +425,7 @@ st.title("📧 Disparador de E-mails com Outlook Desktop")
 st.markdown("##### Siga o passo a passo abaixo para realizar seus envios com mais segurança.")
 st.divider()
 
-README_PATH = Path.cwd() / "README.md"
+README_PATH = PASTA_PROJETO / "README.md"
 
 with st.expander("📘 Abrir manual do sistema / README", expanded=False):
     if README_PATH.exists():
@@ -735,9 +480,24 @@ st.caption(
 )
 
 if st.button("📄 Criar planilha modelo"):
-    criar_planilha_modelo()
-    st.success("✅ Planilha modelo criada na pasta de planilhas.")
-    st.rerun()
+    try:
+        resultado_modelo = criar_planilha_modelo()
+
+        if resultado_modelo["tipo"] == "nova":
+            st.success(f"✅ {resultado_modelo['mensagem']}")
+        else:
+            st.info(f"📄 {resultado_modelo['mensagem']}")
+
+        st.rerun()
+
+    except PermissionError:
+        st.warning(
+            "⚠️ Não foi possível criar ou copiar a planilha modelo. "
+            "Feche o arquivo no Excel ou na pré-visualização do Windows e tente novamente."
+        )
+
+    except Exception as e:
+        st.error(f"Erro ao criar a planilha modelo: {e}")
 
 planilhas = sorted(list(PASTA_PLANILHAS.glob("*.xlsx")))
 
@@ -1151,21 +911,10 @@ Atenciosamente,
         st.error(f"Erro ao gerar prévia: {e}")
 
 else:
-    templates = sorted(list(PASTA_TEMPLATES.glob("*.html")))
-
-    if not templates:
-        template_html_inicial = """
+    template_html_inicial = """
 <p>Olá {Nome},</p>
 <p>Mensagem de teste.</p>
 """.strip()
-    else:
-        template_selecionado = st.selectbox(
-            "Selecione o template HTML:",
-            templates,
-            format_func=lambda c: c.name
-        )
-
-        template_html_inicial = carregar_template_html(template_selecionado)
 
     col_html, col_preview = st.columns([1.15, 1])
 
@@ -1323,9 +1072,9 @@ with st.expander("⚙️ Configurações avançadas", expanded=True):
         limite = st.number_input(
             "Limite de linhas processadas",
             min_value=0,
-            value=1 if "Display" in modo_acao else 0,
+            value=1 if "Modo Visualização" in modo_acao else 0,
             step=1,
-            help="Em Modo Display, recomenda-se processar poucas linhas por vez (ex: 1 a 3)."
+            help="Em Modo Visualização, recomenda-se processar poucas linhas por vez (ex: 1 a 3)."
         )
 
     with coluna_adv_2:
@@ -1344,7 +1093,7 @@ if enviar_real:
     st.error("🚨 ATENÇÃO: O disparo dos e-mails está em MODO REAL e será realizado!")
     confirmacao_envio = st.checkbox("Tenho certeza e autorizo o disparo oficial.")
 elif modo_display:
-    st.info("👁️ **Modo Display Ativo:** O Outlook vai abrir a janela com o e-mail pronto na sua tela.")
+    st.info("👁️ **Modo Visualização Ativo:** O Outlook vai abrir a janela com o e-mail pronto na sua tela.")
 else:
     st.info("🟡 **Modo Simulação:** Validação apenas na tela do sistema.")
 

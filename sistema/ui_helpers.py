@@ -1,0 +1,1 @@
+# Futuramente para separar funções de UI
