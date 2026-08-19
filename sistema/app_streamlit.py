@@ -10,16 +10,16 @@ import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
 
-from sistema.excel_modelo import criar_planilha_modelo
-from sistema.style import aplicar_estilo_global
+from excel_modelo import criar_planilha_modelo
+from style import aplicar_estilo_global
 
-from sistema.core import (
+from core import (
     processar_envios,
     valor_verdadeiro,
     renderizar_html
 )
 
-from sistema.config import (
+from config import (
     PASTA_PROJETO,
     BASE_DIR,
     PASTA_PLANILHAS,

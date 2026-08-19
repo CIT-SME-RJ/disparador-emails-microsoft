@@ -4,7 +4,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.comments import Comment
 
-from sistema.config import PASTA_PLANILHAS
+from config import PASTA_PLANILHAS
 
 
 def obter_caminho_copia_modelo_disponivel():
