@@ -4,7 +4,7 @@ Aplicação em Python com interface em Streamlit para auxiliar o envio controlad
 
 O sistema permite carregar uma planilha Excel, personalizar mensagens com dados da tabela, validar e-mails e anexos, revisar a pré-visualização e escolher entre validação, visualização no Outlook ou envio real.
 
-## Para que serve
+## Objetivo
 
 Este sistema foi criado para facilitar disparos de e-mails em lote com mais segurança operacional.
 
